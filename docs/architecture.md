@@ -46,7 +46,7 @@ directly, and the business rules live inside the database.
 | A user cannot promote themselves | Trigger `protect_profile_role` (only an admin can change roles) |
 | Clients can only cancel their own pending future bookings | Function `cancel_appointment()` plus the appointment update guard (clients have no general update permission) |
 | Staff can permanently delete appointments | Row Level Security policy `appointments: staff delete` (deletion is recorded in the audit log) |
-| Clients are notified of bookings and status changes | Trigger `notify_appointment` writes a row to `notifications` |
+| Clients are notified of bookings, status changes, and staff deletions | Triggers write notices to `notifications`; notices are retained when an appointment is deleted |
 | Other clients' slots are hidden but taken times are visible | `booked_slots` table (times only, no personal data), kept in sync by trigger |
 | Shop opening hours and closed days | **Frontend only** (`frontend/app/js/shop-config.js`). Not enforced by the database yet |
 

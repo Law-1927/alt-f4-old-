@@ -182,7 +182,7 @@
     async function deleteBooking(row, button) {
         clearMessage();
         const ok = window.confirm(
-            'Permanently delete booking ' + row.ref_id + '? It will be removed from booking history and reports, its time slot will be freed, and its notifications will be deleted. This cannot be undone.'
+            'Permanently delete booking ' + row.ref_id + '? It will be removed from booking history and reports, its time slot will be freed, and the client will be notified. The notice will remain in their history. This cannot be undone.'
         );
         if (!ok) return;
 

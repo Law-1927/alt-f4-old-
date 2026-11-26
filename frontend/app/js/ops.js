@@ -30,7 +30,36 @@
         return { active, completed, revenue: centavos / 100 };
     }
 
-    const api = { nextStatuses, summarize };
+    function normalizeResolvedParts(value) {
+        const values = Array.isArray(value) ? value : String(value || '').split(/[,\n;]/);
+        const seen = new Set();
+        return values.reduce((parts, item) => {
+            const label = String(item || '').trim().replace(/\s+/g, ' ');
+            const key = label.toLocaleLowerCase();
+            if (label && !seen.has(key)) {
+                seen.add(key);
+                parts.push(label);
+            }
+            return parts;
+        }, []);
+    }
+
+    function countResolvedParts(rows) {
+        const counts = new Map();
+        rows.forEach((row) => {
+            if (row.status !== 'Completed') return;
+            normalizeResolvedParts(row.resolved_parts).forEach((label) => {
+                const key = label.toLocaleLowerCase();
+                const current = counts.get(key);
+                if (current) current.count += 1;
+                else counts.set(key, { label, count: 1 });
+            });
+        });
+        return Array.from(counts.values())
+            .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    }
+
+    const api = { nextStatuses, summarize, normalizeResolvedParts, countResolvedParts };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.ALT_OPS = api;
 })(typeof window !== 'undefined' ? window : globalThis);

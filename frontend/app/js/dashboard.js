@@ -27,9 +27,104 @@
 
     const peso = (n) => '₱ ' + Number(n).toLocaleString('en-PH', { maximumFractionDigits: 2 });
 
+    function databaseErrorHint(error) {
+        if (error && error.code === '42501') {
+            return ' Apply supabase/migrations/20261127000000_authenticated_api_grants.sql in the Supabase project configured for this app.';
+        }
+        if (error && error.code === '42703' && /resolved_parts/i.test(error.message || '')) {
+            return ' Apply supabase/migrations/20261127020000_appointment_resolved_parts.sql before using car-part labels.';
+        }
+        return '';
+    }
+
     function td(className) {
         const cell = document.createElement('td');
         cell.className = className;
+        return cell;
+    }
+
+    function requestResolvedParts(row, initialParts) {
+        return new Promise((resolve) => {
+            const dialog = $('resolved-parts-dialog');
+            const form = $('resolved-parts-form');
+            const input = $('resolved-parts-input');
+            const error = $('resolved-parts-error');
+            const parts = OPS.normalizeResolvedParts(initialParts);
+            const isEditing = row.status === 'Completed';
+
+            $('resolved-parts-title').textContent = isEditing ? 'Edit resolved car parts' : 'Complete appointment';
+            $('resolved-parts-context').textContent = row.ref_id + ': enter the areas worked on.';
+            $('resolved-parts-save').textContent = isEditing ? 'Save labels' : 'Save and complete';
+            input.value = parts.join(', ');
+            error.textContent = '';
+            error.classList.add('hidden');
+
+            function finish(result) {
+                form.removeEventListener('submit', onSubmit);
+                $('resolved-parts-cancel').removeEventListener('click', onCancel);
+                dialog.removeEventListener('cancel', onCancel);
+                dialog.close();
+                resolve(result);
+            }
+            function onCancel(event) {
+                if (event) event.preventDefault();
+                finish(null);
+            }
+            function onSubmit(event) {
+                event.preventDefault();
+                const labels = OPS.normalizeResolvedParts(input.value);
+                if (!labels.length) {
+                    error.textContent = 'Enter at least one car part or area.';
+                } else if (labels.length > 12) {
+                    error.textContent = 'Use no more than 12 labels.';
+                } else if (labels.some((label) => label.length > 60)) {
+                    error.textContent = 'Each label must be 60 characters or fewer.';
+                } else {
+                    finish(labels);
+                    return;
+                }
+                error.classList.remove('hidden');
+            }
+
+            form.addEventListener('submit', onSubmit);
+            $('resolved-parts-cancel').addEventListener('click', onCancel);
+            dialog.addEventListener('cancel', onCancel);
+            dialog.showModal();
+            input.focus();
+        });
+    }
+
+    async function editResolvedParts(row) {
+        const parts = await requestResolvedParts(row, row.resolved_parts || []);
+        if (!parts) return;
+        clearMessage();
+        const { error } = await ALT.db.from('appointments')
+            .update({ resolved_parts: parts })
+            .eq('id', row.id)
+            .select('id')
+            .single();
+        if (error) showMessage('Could not update labels for ' + row.ref_id + '. ' + error.message + databaseErrorHint(error));
+        else showMessage('Resolved areas updated for ' + row.ref_id + '.', 'ok');
+        await load();
+    }
+
+    function resolvedPartsCell(row) {
+        const cell = td('py-3 pr-3');
+        const labels = OPS.normalizeResolvedParts(row.resolved_parts || []);
+        const text = document.createElement('div');
+        text.className = 'text-[11px] text-zinc-400';
+        text.textContent = labels.length ? labels.join(', ') : (row.status === 'Completed' ? 'No labels yet' : '—');
+        cell.append(text);
+
+        if (row.status === 'Completed') {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'mt-1 text-[10px] uppercase text-altRed hover:text-red-400';
+            button.textContent = labels.length ? 'Edit labels' : 'Add labels';
+            button.setAttribute('aria-label', (labels.length ? 'Edit' : 'Add') + ' resolved areas for ' + row.ref_id);
+            button.addEventListener('click', () => editResolvedParts(row));
+            cell.append(button);
+        }
         return cell;
     }
 
@@ -63,13 +158,23 @@
             select.value = row.status;
             return;
         }
+        let resolvedParts;
+        if (to === 'Completed') {
+            resolvedParts = await requestResolvedParts(row, []);
+            if (!resolvedParts) {
+                select.value = row.status;
+                return;
+            }
+        }
         select.disabled = true;
+        const updates = { status: to };
+        if (to === 'Completed') updates.resolved_parts = resolvedParts;
         const { error } = await ALT.db.from('appointments')
-            .update({ status: to })
+            .update(updates)
             .eq('id', row.id)
             .select('id')
             .single();
-        if (error) showMessage('Could not update ' + row.ref_id + '. ' + error.message);
+        if (error) showMessage('Could not update ' + row.ref_id + '. ' + error.message + databaseErrorHint(error));
         else showMessage(row.ref_id + ' is now ' + to + '.', 'ok');
         await load(); // always re-read so the table shows the real saved state
     }
@@ -111,7 +216,7 @@
             const total = td('py-3 pr-3 text-right whitespace-nowrap');
             total.textContent = peso(r.total_due_php);
 
-            tr.append(time, who, svc, total, statusCell(r));
+            tr.append(time, who, svc, total, resolvedPartsCell(r), statusCell(r));
             body.append(tr);
         });
 
@@ -207,6 +312,51 @@
             item.append(name, value);
             statusList.append(item);
         });
+
+        renderResolvedPartAnalytics(rows);
+        updateResolvedPartSuggestions(rows);
+    }
+
+    function renderResolvedPartAnalytics(rows) {
+        const chart = $('analytics-parts');
+        const empty = $('analytics-parts-empty');
+        chart.replaceChildren();
+        const parts = OPS.countResolvedParts(rows);
+        empty.classList.toggle('hidden', parts.length > 0);
+
+        const maxCount = Math.max(0, ...parts.map((part) => part.count));
+        parts.forEach((part) => {
+            const item = document.createElement('div');
+            item.className = 'bg-black/50 border border-zinc-800 p-3';
+            const heading = document.createElement('div');
+            heading.className = 'flex justify-between gap-3 text-xs';
+            const label = document.createElement('span');
+            label.className = 'text-zinc-300 truncate';
+            label.textContent = part.label;
+            const count = document.createElement('span');
+            count.className = 'font-mono font-bold text-altRed whitespace-nowrap';
+            count.textContent = part.count + (part.count === 1 ? ' job' : ' jobs');
+            heading.append(label, count);
+
+            const track = document.createElement('div');
+            track.className = 'h-1 bg-zinc-800 mt-2';
+            const bar = document.createElement('div');
+            bar.className = 'h-full bg-altRed';
+            bar.style.width = Math.round(part.count / maxCount * 100) + '%';
+            track.append(bar);
+            item.append(heading, track);
+            chart.append(item);
+        });
+    }
+
+    function updateResolvedPartSuggestions(rows) {
+        const datalist = $('resolved-parts-suggestions');
+        datalist.replaceChildren();
+        OPS.countResolvedParts(rows).forEach((part) => {
+            const option = document.createElement('option');
+            option.value = part.label;
+            datalist.append(option);
+        });
     }
 
     function showAnalyticsError(error) {
@@ -216,7 +366,10 @@
         });
         $('analytics-chart').replaceChildren();
         $('analytics-status').replaceChildren();
-        showMessage('Could not load 7-day analytics. ' + error.message);
+        $('analytics-parts').replaceChildren();
+        $('analytics-parts-empty').textContent = 'Car-part analytics could not be loaded.';
+        $('analytics-parts-empty').classList.remove('hidden');
+        showMessage('Could not load 7-day analytics. ' + error.message + databaseErrorHint(error));
     }
 
     let loadSeq = 0;
@@ -229,7 +382,7 @@
 
         const [daily, weekly] = await Promise.all([
             ALT.db.from('appointments')
-                .select('id, ref_id, status, starts_at, ends_at, total_due_php, ' +
+                .select('id, ref_id, status, starts_at, ends_at, total_due_php, resolved_parts, ' +
                         'client:profiles!appointments_client_id_fkey(full_name, phone), ' +
                         'vehicle:vehicles(make, model, plate_number), ' +
                         'service:services(name)')
@@ -237,13 +390,13 @@
                 .lt('starts_at', day.end.toISOString())
                 .order('starts_at'),
             ALT.db.from('appointments')
-                .select('status, starts_at, total_due_php')
+                .select('status, starts_at, total_due_php, resolved_parts')
                 .gte('starts_at', weekStart.start.toISOString())
                 .lt('starts_at', day.end.toISOString()),
         ]);
 
         if (seq !== loadSeq) return; // a newer request replaced this one
-        if (daily.error) return showMessage('Could not load bookings. ' + daily.error.message);
+        if (daily.error) return showMessage('Could not load bookings. ' + daily.error.message + databaseErrorHint(daily.error));
         render(daily.data || []);
         if (weekly.error) return showAnalyticsError(weekly.error);
         renderAnalytics(weekly.data || [], date);

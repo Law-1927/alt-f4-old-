@@ -103,17 +103,22 @@ This is the simplest route and what the team should use.
    `supabase/migrations/20261127000000_authenticated_api_grants.sql`.
 6. Run the full contents of
    `supabase/migrations/20261127010000_booking_cancellation_time_guard.sql`.
+7. Run the full contents of
+   `supabase/migrations/20261127020000_appointment_resolved_parts.sql`.
 
 It creates the tables, the double-booking rule, row-level security, the
 notification triggers, the `reports_daily` view, and the real-time
 publication. The follow-up hardening migration adds checks for future profile
 writes, appointment update guards, staff access auditing, and restricted helper
 function grants. The API-grants migration gives the `authenticated` role the
-SQL privileges needed to reach the existing row-level security policies. Apply
-migrations in timestamp order. The initial migration is not idempotent; the
-security-hardening migration is safe to re-run if a Supabase Preview check
-retries against a database where it has already been applied. The grants and
-cancellation guard migrations are also safe to re-run.
+SQL privileges needed to reach the existing row-level security policies. The
+resolved-parts migration adds custom labels for completed appointments and
+updates the staff-only update guard without changing the existing status
+transitions. Existing completed appointments remain unlabeled until staff add
+labels. Apply migrations in timestamp order. The initial migration is not
+idempotent; the security-hardening migration is safe to re-run if a Supabase
+Preview check retries against a database where it has already been applied.
+The grants and follow-up migrations are also safe to re-run.
 The cancellation guard migration allows clients to cancel only their own
 pending appointments before the appointment start time.
 To start over, create a fresh Supabase project (simplest) or drop the tables first.
@@ -316,6 +321,8 @@ before adding those rules to a future migration.
 | Query returns empty for a signed-in user | Row-level security. The user is probably not the owner or not staff |
 | `npx supabase start` fails | Docker Desktop is not running |
 | Home page says "Could not load your profile" | The profile row is missing, or the migration was not applied to this project |
+| Staff dashboard says "permission denied for table appointments" | Run `20261127000000_authenticated_api_grants.sql` in the SQL Editor for the Supabase project configured in `frontend/app/js/supabase-config.js`; pushing code to GitHub does not apply database migrations |
+| Dashboard says `resolved_parts` does not exist | Run `20261127020000_appointment_resolved_parts.sql` in that same Supabase project |
 | Booking page lists no services | The catalog is empty. Run `supabase/seed_test_services.sql` for test data |
 | A new signup stays on the login page | Email confirmation is on. Confirm via the email, or switch it off for testing |
 | Slots or the dashboard do not update live | Run `select tablename from pg_publication_tables where pubname = 'supabase_realtime';` It should list `appointments`, `booked_slots`, and `notifications` |

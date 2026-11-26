@@ -6,8 +6,82 @@
     const authModal = document.getElementById('authModal');
     const authFrame = document.getElementById('authFrame');
     const authClose = authModal.querySelector('.auth-close');
+    const accountLink = document.getElementById('homepageAccountLink');
+    const primaryAction = document.getElementById('homepagePrimaryAction');
+    const footerRegister = document.getElementById('footerRegister');
+    const footerPortal = document.getElementById('footerPortal');
+    const authStatus = document.getElementById('authStatus');
+    const authLinks = Array.from(document.querySelectorAll('[data-auth]'));
+    const originalHrefs = new Map(authLinks.map((link) => [link, link.getAttribute('href')]));
     let previouslyFocused = null;
     let authFrameObserver = null;
+    let authSequence = 0;
+    let authState = {
+        signedIn: false,
+        accountHref: null,
+        actionHref: null,
+    };
+
+    function showAuthStatus(message) {
+        authStatus.textContent = message;
+        authStatus.hidden = !message;
+    }
+
+    function setSignedOut() {
+        authState = { signedIn: false, accountHref: null, actionHref: null };
+        authLinks.forEach((link) => { link.href = originalHrefs.get(link); });
+        accountLink.textContent = 'Log in';
+        primaryAction.textContent = 'Create account';
+        footerRegister.textContent = 'Create an account';
+        footerPortal.textContent = 'Client portal';
+    }
+
+    function setSignedIn(role) {
+        const isStaff = role ? window.ALT.isStaff(role) : false;
+        const accountHref = role ? (isStaff ? 'dashboard.html' : 'history.html') : 'home.html';
+        const actionHref = isStaff ? 'dashboard.html' : 'book-service.html';
+
+        authState = { signedIn: true, accountHref, actionHref };
+        authLinks.forEach((link) => {
+            link.href = link.dataset.auth === 'login' ? accountHref : actionHref;
+        });
+        accountLink.textContent = isStaff ? 'Dashboard' : role ? 'My bookings' : 'My account';
+        primaryAction.textContent = 'Sign out';
+        primaryAction.href = '#signout';
+        footerRegister.textContent = isStaff ? 'Staff dashboard' : 'Book an appointment';
+        footerPortal.textContent = isStaff ? 'Staff dashboard' : role ? 'My bookings' : 'My account';
+    }
+
+    async function applySession(session) {
+        const sequence = ++authSequence;
+        showAuthStatus('');
+        if (!session) {
+            setSignedOut();
+            return;
+        }
+
+        setSignedIn(null);
+        try {
+            const profile = await window.ALT.getMyProfile(session.user.id);
+            if (sequence !== authSequence) return;
+            if (!profile) {
+                showAuthStatus('Your account profile could not be found.');
+                return;
+            }
+            setSignedIn(profile.role);
+        } catch (error) {
+            if (sequence !== authSequence) return;
+            showAuthStatus('Could not load your account role. ' + error.message);
+        }
+    }
+
+    async function signOut() {
+        try {
+            await window.ALT.signOut();
+        } catch (error) {
+            showAuthStatus('Could not sign out. ' + error.message);
+        }
+    }
 
     function resizeAuthFrame() {
         const content = authFrame.contentDocument?.querySelector('main');
@@ -111,8 +185,32 @@
     document.querySelectorAll('[data-auth]').forEach((trigger) => {
         trigger.addEventListener('click', (event) => {
             event.preventDefault();
+            if (authState.signedIn) {
+                if (trigger === primaryAction) {
+                    signOut();
+                    return;
+                }
+                window.location.assign(trigger.dataset.auth === 'login'
+                    ? authState.accountHref
+                    : authState.actionHref);
+                return;
+            }
             openAuth(trigger.dataset.auth);
         });
+    });
+
+    window.ALT.db.auth.onAuthStateChange((_event, session) => {
+        setTimeout(() => applySession(session), 0);
+    });
+
+    window.ALT.db.auth.getSession().then(({ data, error }) => {
+        if (error) {
+            showAuthStatus('Could not check your sign-in status. ' + error.message);
+            return;
+        }
+        applySession(data.session);
+    }).catch((error) => {
+        showAuthStatus('Could not check your sign-in status. ' + error.message);
     });
 
     authModal.querySelectorAll('[data-auth-close]').forEach((button) => {

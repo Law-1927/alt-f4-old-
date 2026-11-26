@@ -31,8 +31,9 @@
             <a href="#about">About</a>
         </nav>
         <div class="header-actions">
-            <a class="btn btn-ghost" href="login.html" data-auth="login">Log in</a>
-            <a class="btn btn-red" href="login.html?mode=register" data-auth="register">Create account</a>
+            <a id="homepageAccountLink" class="btn btn-ghost" href="login.html" data-auth="login">Log in</a>
+            <a id="homepagePrimaryAction" class="btn btn-red" href="login.html?mode=register" data-auth="register">Create account</a>
+            <span id="authStatus" class="auth-status" role="status" aria-live="polite" hidden></span>
         </div>
     </header>
 
@@ -122,8 +123,8 @@
             </section>
             <section class="footer-group" aria-labelledby="footer-booking">
                 <h2 id="footer-booking">Appointments</h2>
-                <a href="login.html?mode=register" data-auth="register">Create an account</a>
-                <a href="login.html" data-auth="login">Client portal</a>
+                <a id="footerRegister" href="login.html?mode=register" data-auth="register">Create an account</a>
+                <a id="footerPortal" href="login.html" data-auth="login">Client portal</a>
                 <a href="history.html">Manage my bookings</a>
             </section>
             <section class="footer-group" aria-labelledby="footer-information">
@@ -149,6 +150,10 @@
         </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
+            integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/landing.js"></script>
 </body>
 </html>

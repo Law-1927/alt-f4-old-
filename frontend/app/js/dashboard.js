@@ -29,7 +29,7 @@
 
     function databaseErrorHint(error) {
         if (error && error.code === '42501') {
-            return ' Apply supabase/migrations/20261127000000_authenticated_api_grants.sql in the Supabase project configured for this app.';
+            return ' Apply pending Supabase migrations, including supabase/migrations/20261127000000_authenticated_api_grants.sql and supabase/migrations/20261127050000_staff_appointment_deletion.sql, in the project configured for this app.';
         }
         if (error && error.code === '42703' && /resolved_parts/i.test(error.message || '')) {
             return ' Apply supabase/migrations/20261127020000_appointment_resolved_parts.sql before using car-part labels.';
@@ -179,6 +179,41 @@
         await load(); // always re-read so the table shows the real saved state
     }
 
+    async function deleteBooking(row, button) {
+        clearMessage();
+        const ok = window.confirm(
+            'Permanently delete booking ' + row.ref_id + '? It will be removed from booking history and reports, its time slot will be freed, and its notifications will be deleted. This cannot be undone.'
+        );
+        if (!ok) return;
+
+        button.disabled = true;
+        const { error } = await ALT.db.from('appointments')
+            .delete()
+            .eq('id', row.id)
+            .select('id')
+            .single();
+        if (error) {
+            showMessage('Could not delete ' + row.ref_id + '. ' + error.message + databaseErrorHint(error));
+            button.disabled = false;
+            return;
+        }
+
+        showMessage(row.ref_id + ' was permanently deleted.', 'ok');
+        await load();
+    }
+
+    function actionsCell(row) {
+        const cell = td('py-3 pr-3');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'border border-red-900/60 text-red-400 hover:bg-red-950/40 px-2 py-1 text-[10px] uppercase font-bold transition-colors';
+        button.textContent = 'Delete';
+        button.setAttribute('aria-label', 'Permanently delete booking ' + row.ref_id);
+        button.addEventListener('click', () => deleteBooking(row, button));
+        cell.append(button);
+        return cell;
+    }
+
     function render(rows) {
         const body = $('rows');
         body.replaceChildren();
@@ -216,7 +251,7 @@
             const total = td('py-3 pr-3 text-right whitespace-nowrap');
             total.textContent = peso(r.total_due_php);
 
-            tr.append(time, who, svc, total, resolvedPartsCell(r), statusCell(r));
+            tr.append(time, who, svc, total, resolvedPartsCell(r), statusCell(r), actionsCell(r));
             body.append(tr);
         });
 

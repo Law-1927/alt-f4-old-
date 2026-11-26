@@ -388,6 +388,25 @@ html[data-theme="dark"] .auth-panel {
     color: #f0efed;
 }
 
+@media (min-width: 1200px) {
+    :root { font-size: 112.5%; }
+
+    .main-nav { font-size: 15px; }
+    .eyebrow { font-size: 12px; }
+    .hero-lead { font-size: 17px; }
+    .text-link { font-size: 14px; }
+    .hero-note,
+    .hero-side-label { font-size: 11px; }
+    .intro-copy { font-size: 17px; }
+    .section-heading > p { font-size: 16px; }
+    .service-card p { font-size: 14px; }
+    .service-card a { font-size: 13px; }
+    .step h3 { font-size: 16px; }
+    .step p { font-size: 14px; }
+    .footer-group a { font-size: 15px; }
+    .footer-bottom { font-size: 12px; }
+}
+
 html[data-theme="dark"] .auth-panel-header {
     border-color: #383633;
 }

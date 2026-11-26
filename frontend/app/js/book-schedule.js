@@ -42,6 +42,13 @@
 
     function updateConfirm() { $('confirm-btn').disabled = !selected; }
 
+    function setBookingDateBounds() {
+        const today = S.todayInManila();
+        $('date').min = today;
+        $('date').max = S.addDays(today, shop.BOOKING_WINDOW_DAYS);
+        return today;
+    }
+
     function setCheck(text, ok) {
         const el = $('check');
         el.textContent = '';
@@ -51,6 +58,8 @@
         el.append(label, document.createTextNode(text));
         el.classList.remove('hidden');
     }
+
+    setBookingDateBounds();
 
     function renderSlots(result) {
         const grid = $('slots');
@@ -76,11 +85,11 @@
             const isSel = selected && selected.start.getTime() === s.start.getTime();
             if (s.status !== 'free') {
                 b.disabled = true;
-                b.className = 'p-2 border border-zinc-800 ' +
+                b.className = 'p-3 border border-zinc-800 text-sm ' +
                     (s.status === 'booked' ? 'line-through text-zinc-600' : 'text-zinc-700');
                 b.title = s.status === 'booked' ? 'Already booked' : 'Time has passed';
             } else {
-                b.className = 'p-2 border ' + (isSel
+                b.className = 'p-3 border text-sm ' + (isSel
                     ? 'border-altRed bg-altRed text-white font-bold'
                     : 'border-zinc-700 hover:border-altRed');
                 b.addEventListener('click', () => {
@@ -95,13 +104,13 @@
     }
 
     async function loadSlots() {
+        const today = setBookingDateBounds();
         const date = $('date').value;
         const previous = selected ? selected.start.getTime() : null;
         selected = null;
         updateConfirm();
         if (!date) return;
 
-        const today = S.todayInManila();
         if (!S.isWithinBookingWindow(date, today, shop.BOOKING_WINDOW_DAYS)) {
             $('slots').replaceChildren();
             return setCheck('Please choose a date within the next ' + shop.BOOKING_WINDOW_DAYS + ' days.', false);
@@ -176,11 +185,20 @@
     $('s-price').textContent = peso(service.price_php);
     $('summary').classList.remove('hidden');
 
-    const today = S.todayInManila();
-    $('date').min = today;
-    $('date').max = S.addDays(today, shop.BOOKING_WINDOW_DAYS);
+    const today = setBookingDateBounds();
     $('date').value = S.firstOpenDay(today, shop);
-    $('date').addEventListener('change', loadSlots);
+    $('date').addEventListener('change', () => {
+        const minDate = setBookingDateBounds();
+        if ($('date').value && $('date').value < minDate) {
+            $('date').value = '';
+            selected = null;
+            $('slots').replaceChildren();
+            updateConfirm();
+            setCheck('Past dates are unavailable. Please choose today or a future date.', false);
+            return;
+        }
+        loadSlots();
+    });
     await loadSlots();
     if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 

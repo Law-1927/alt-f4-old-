@@ -64,5 +64,10 @@ test('accepts only dates inside the inclusive booking window', () => {
     assert.equal(S.isWithinBookingWindow(today, today, 60), true);
     assert.equal(S.isWithinBookingWindow(lastBookableDay, today, 60), true);
     assert.equal(S.isWithinBookingWindow(S.addDays(today, -1), today, 60), false);
+    assert.equal(S.isWithinBookingWindow('2024-01-01', today, 60), false);
     assert.equal(S.isWithinBookingWindow(S.addDays(today, 61), today, 60), false);
+});
+
+test('formats Manila today as an ISO date across a UTC day boundary', () => {
+    assert.equal(S.todayInManila(new Date('2026-11-26T16:30:00Z')), '2026-11-27');
 });

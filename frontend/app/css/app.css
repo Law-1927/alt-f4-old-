@@ -485,3 +485,11 @@ html.auth-embedded .color-mode-toggle {
         transition-duration: 0.01ms !important;
     }
 }
+
+@media (min-width: 1200px) {
+    html { font-size: 112.5%; }
+
+    [class~="text-[9px]"] { font-size: .6875rem; }
+    [class~="text-[10px]"] { font-size: .75rem; }
+    [class~="text-[11px]"] { font-size: .8125rem; }
+}

@@ -3,45 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALTF4 - Date & Time</title>
+    <title>Choose an Appointment Time | Shimmer &amp; Shield</title>
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="js/color-mode.js"></script>
+    <link rel="stylesheet" href="css/landing.css">
     <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/booking-flow.css">
 </head>
-<body class="min-h-screen p-3 py-4">
+<body class="booking-site">
     <div id="page-loader" class="page-loader" role="status" aria-live="polite" aria-hidden="false">
         <div class="page-loader-card"><span class="page-loader-spinner" aria-hidden="true"></span><span id="page-loader-message">Checking availability…</span></div>
     </div>
 
-    <main class="w-full max-w-md mx-auto bg-black border-2 border-zinc-800 rounded-lg overflow-hidden">
-        <header class="bg-zinc-900 border-b border-zinc-800 px-4 py-3 flex justify-between items-center text-xs font-bold uppercase text-zinc-400">
-            <span>2. Date &amp; Time Sync</span>
-            <a href="book-service.html" class="hover:text-white">Back</a>
-        </header>
+    <header class="site-header booking-header">
+        <a class="brand" href="index.html" aria-label="Shimmer and Shield homepage">
+            <span class="brand-mark"><span class="brand-mark-letters">S<span>&amp;</span>S</span></span>
+            <span class="brand-copy"><strong>SHIMMER <i>&amp;</i> SHIELD</strong><small>CAR COATING</small></span>
+        </a>
+        <nav class="booking-nav" aria-label="Main navigation">
+            <a href="index.html#services">Services</a>
+            <a href="index.html#process">How it works</a>
+            <a href="contact.html">Contact</a>
+        </nav>
+        <div class="booking-actions"><a class="btn btn-red" href="home.html">My account</a></div>
+    </header>
 
-        <div class="p-4">
-            <p id="msg" role="alert" class="hidden text-xs p-3 mb-4 border"></p>
+    <main class="booking-main">
+        <section class="booking-intro">
+            <p class="eyebrow"><span></span> ONLINE BOOKING · STEP 02</p>
+            <h1>Choose a time that <em>works for you.</em></h1>
+            <p>Select an open date and appointment slot for your chosen service.</p>
+        </section>
 
-            <div id="summary" class="hidden border border-zinc-800 p-3 mb-4 text-xs space-y-1">
-                <p class="font-bold text-sm"><span id="s-service"></span></p>
+        <ol class="booking-progress" aria-label="Booking progress">
+            <li class="is-complete"><span>01</span><span>Vehicle &amp; service</span></li>
+            <li class="is-current" aria-current="step"><span>02</span><span>Date &amp; time</span></li>
+            <li><span>03</span><span>Confirmation</span></li>
+        </ol>
+
+        <section class="booking-panel" aria-label="Choose appointment date and time">
+            <a href="book-service.html" class="booking-back">← Change vehicle or service</a>
+            <p id="msg" role="alert" class="hidden text-sm p-4 mb-5 border"></p>
+
+            <div id="summary" class="hidden booking-summary">
+                <p class="font-bold text-base"><span id="s-service"></span></p>
                 <p class="text-zinc-400"><span id="s-vehicle"></span></p>
                 <p class="text-zinc-500"><span id="s-duration"></span> · <span id="s-price" class="text-altRed font-bold"></span></p>
             </div>
 
-            <div id="check" class="hidden bg-zinc-900 border border-zinc-800 p-3 text-xs text-zinc-400 mb-4"></div>
+            <div id="check" class="hidden booking-availability text-sm text-zinc-400"></div>
 
-            <h2 class="font-bold text-sm uppercase mb-3">Select Date</h2>
-            <input id="date" type="date" aria-describedby="date-help" class="w-full bg-black border border-zinc-700 p-3 text-sm text-white mb-4">
-            <p id="date-help" class="text-xs text-zinc-500 -mt-2 mb-4">Past dates and dates outside the booking window are unavailable.</p>
+            <div class="booking-schedule-grid">
+                <section aria-labelledby="date-title">
+                    <h2 id="date-title" class="booking-section-title">Select a date</h2>
+                    <input id="date" type="date" aria-describedby="date-help" class="w-full bg-black border border-zinc-700 p-4 text-base text-white">
+                    <p id="date-help" class="text-sm text-zinc-500 mt-3">Past dates and dates outside the booking window are unavailable.</p>
+                </section>
 
-            <h2 class="font-bold text-sm uppercase mb-3">Available Slots</h2>
-            <div id="slots" class="grid grid-cols-3 gap-2 text-xs"></div>
+                <section aria-labelledby="slots-title">
+                    <h2 id="slots-title" class="booking-section-title">Available times</h2>
+                    <div id="slots" class="booking-slot-grid text-sm"></div>
+                </section>
+            </div>
 
             <button id="confirm-btn" type="button" disabled
-                    class="w-full bg-altRed text-white font-bold py-3 mt-5 text-sm uppercase">Confirm Booking</button>
-        </div>
-        <p class="app-page-footer mx-4 mb-4"><a href="index.html">Back to homepage</a></p>
+                    class="w-full bg-altRed text-white font-bold py-4 mt-7 text-base uppercase">Confirm Booking</button>
+        </section>
     </main>
+
+    <footer class="booking-footer">
+        <span>© 2026 Shimmer &amp; Shield Car Coating</span>
+        <nav aria-label="Footer navigation"><a href="index.html">Homepage</a><a href="contact.html">Contact</a><a href="terms.html">Terms &amp; privacy</a></nav>
+    </footer>
 
     <script src="js/page-loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"

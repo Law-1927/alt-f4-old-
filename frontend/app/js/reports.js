@@ -278,7 +278,7 @@
             $('date-from').value = '';
             $('date-to').value = '';
         }
-        load();
+        return load();
     }
 
     // ---- start-up -------------------------------------------------------
@@ -290,11 +290,12 @@
         profile = await ALT.getMyProfile(session.user.id);
     } catch (err) {
         showMessage('Could not load profile: ' + err.message, 'error');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
         return;
     }
 
     if (!profile || !ALT.isStaff(profile.role)) {
-        window.location.replace('home.html');
+        window.location.replace('history.html');
         return;
     }
 
@@ -312,9 +313,13 @@
 
     const serviceError = await populateServices();
 
-    if (!await recordStaffAccess('reports_view')) return;
+    if (!await recordStaffAccess('reports_view')) {
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
 
     // Default to current month
-    setPresetDates('month');
+    await setPresetDates('month');
     if (serviceError) showMessage('Could not load services for report filters: ' + serviceError.message, 'error');
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 })();

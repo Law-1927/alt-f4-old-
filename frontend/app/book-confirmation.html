@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="min-h-screen p-3 py-4">
+    <div id="page-loader" class="page-loader" role="status" aria-live="polite" aria-hidden="false">
+        <div class="page-loader-card"><span class="page-loader-spinner" aria-hidden="true"></span><span id="page-loader-message">Loading your confirmation…</span></div>
+    </div>
 
     <main class="w-full max-w-md mx-auto bg-black border-2 border-zinc-800 rounded-lg overflow-hidden">
         <header class="bg-zinc-900 border-b border-zinc-800 px-4 py-3 text-xs font-bold uppercase text-zinc-400">
@@ -39,11 +42,12 @@
 
             <div class="flex flex-col gap-2 mt-4">
                 <a href="history.html" class="block text-center w-full bg-altRed text-white text-xs font-bold py-2 uppercase hover:bg-red-700 transition-colors">View My Bookings</a>
-                <a href="home.html" class="block text-center w-full border border-zinc-700 text-zinc-300 text-xs font-bold py-2 uppercase hover:text-white hover:border-zinc-500">Back to home</a>
+                <a href="index.html" class="block text-center w-full border border-zinc-700 text-zinc-300 text-xs font-bold py-2 uppercase hover:text-white hover:border-zinc-500">Back to homepage</a>
             </div>
         </div>
     </main>
 
+    <script src="js/page-loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
             integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
     <script src="js/supabase-config.js"></script>

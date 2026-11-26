@@ -3,30 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALTF4 - Home</title>
+    <title>ALTF4 - Redirecting</title>
     <link rel="stylesheet" href="css/tailwind.css">
     <script src="js/color-mode.js"></script>
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body class="min-h-screen flex items-center justify-center p-3">
+    <div id="page-loader" class="page-loader" role="status" aria-live="polite" aria-hidden="false">
+        <div class="page-loader-card"><span class="page-loader-spinner" aria-hidden="true"></span><span id="page-loader-message">Opening your dashboard…</span></div>
+    </div>
 
     <main class="w-full max-w-md bg-black border-2 border-zinc-800 rounded-lg p-4">
-        <h1 class="text-2xl font-black italic text-center mb-6">ALT<span class="text-altRed">F4</span></h1>
-
-        <p id="status" class="text-sm text-zinc-400 text-center">Loading…</p>
-
-        <div id="account" class="hidden space-y-2 text-sm">
-            <p>Signed in as <strong id="who"></strong></p>
-            <p class="text-zinc-400">Email: <span id="email"></span></p>
-            <p class="text-zinc-400">Role: <span id="role" class="text-altRed font-bold uppercase"></span></p>
-            <a id="book-link" href="book-service.html" hidden class="block text-center w-full bg-altRed text-white font-bold py-3 mt-4 text-sm uppercase">Book an appointment</a>
-            <a id="history-link" href="history.html" hidden class="block text-center w-full border border-zinc-700 text-zinc-300 font-bold py-3 mt-2 text-sm uppercase hover:text-white hover:border-zinc-500">My Bookings & Notices</a>
-            <a id="dash-link" href="dashboard.html" hidden class="block text-center w-full bg-altRed text-white font-bold py-3 mt-4 text-sm uppercase">Open staff dashboard</a>
-            <a id="reports-link" href="reports.html" hidden class="block text-center w-full border border-zinc-700 text-zinc-300 font-bold py-3 mt-2 text-sm uppercase hover:text-white hover:border-zinc-500">Staff Reports & Export</a>
-            <button id="signout" type="button" class="w-full border border-zinc-700 text-zinc-300 text-xs font-bold py-2 mt-4 uppercase hover:text-white hover:border-zinc-500">Sign out</button>
-        </div>
+        <h1 class="text-2xl font-black italic text-center mb-4">ALT<span class="text-altRed">F4</span></h1>
+        <p id="status" class="text-sm text-zinc-400 text-center">Taking you to the right dashboard…</p>
+        <p class="app-page-footer"><a href="index.html">Back to homepage</a></p>
     </main>
 
+    <script src="js/page-loading.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"
             integrity="sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK" crossorigin="anonymous"></script>
     <script src="js/supabase-config.js"></script>

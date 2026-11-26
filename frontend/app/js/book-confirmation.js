@@ -16,7 +16,11 @@
     if (!session) return;
 
     const id = Number(new URLSearchParams(window.location.search).get('id'));
-    if (!Number.isInteger(id) || id <= 0) return showMessage('No booking was specified.');
+    if (!Number.isInteger(id) || id <= 0) {
+        showMessage('No booking was specified.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
 
     // Row Level Security means a client can only ever load their own booking.
     const { data, error } = await ALT.db.from('appointments')
@@ -24,8 +28,16 @@
         .eq('id', id)
         .maybeSingle();
 
-    if (error) return showMessage('Could not load the booking. ' + error.message);
-    if (!data) return showMessage('Booking not found.');
+    if (error) {
+        showMessage('Could not load the booking. ' + error.message);
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
+    if (!data) {
+        showMessage('Booking not found.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
 
     const start = new Date(data.starts_at);
     const end = new Date(data.ends_at);
@@ -39,4 +51,5 @@
     $('r-status').textContent = data.status;
     $('r-total').textContent = '₱ ' + Number(data.total_due_php).toLocaleString('en-PH', { maximumFractionDigits: 2 });
     $('receipt').classList.remove('hidden');
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 })();

@@ -255,16 +255,24 @@
 
     let profile;
     try { profile = await ALT.getMyProfile(session.user.id); }
-    catch (err) { return showMessage('Could not load your profile. ' + err.message); }
+    catch (err) {
+        showMessage('Could not load your profile. ' + err.message);
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
     if (!profile || !ALT.isStaff(profile.role)) {
-        window.location.replace('home.html'); // clients have no dashboard
+        window.location.replace('history.html');
         return;
     }
 
     const { error: auditError } = await ALT.db.rpc('record_staff_access', {
         p_action: 'dashboard_view',
     });
-    if (auditError) return showMessage('Could not write the staff access audit record. ' + auditError.message);
+    if (auditError) {
+        showMessage('Could not write the staff access audit record. ' + auditError.message);
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
 
     $('signout').addEventListener('click', () => ALT.signOut());
     $('date').value = S.todayInManila();
@@ -273,6 +281,7 @@
     $('next').addEventListener('click', () => { $('date').value = S.addDays($('date').value || S.todayInManila(), 1); load(); });
     $('today').addEventListener('click', () => { $('date').value = S.todayInManila(); load(); });
     await load();
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 
     // Live updates: any booking change refreshes the table (debounced so a
     // burst of changes causes one reload).

@@ -102,8 +102,7 @@
         if (!date) return;
 
         const today = S.todayInManila();
-        const last = S.addDays(today, shop.BOOKING_WINDOW_DAYS);
-        if (date < today || date > last) {
+        if (!S.isWithinBookingWindow(date, today, shop.BOOKING_WINDOW_DAYS)) {
             $('slots').replaceChildren();
             return setCheck('Please choose a date within the next ' + shop.BOOKING_WINDOW_DAYS + ' days.', false);
         }
@@ -115,7 +114,10 @@
             .lt('starts_at', day.end.toISOString())
             .gt('ends_at', day.start.toISOString());
         if (seq !== loadSeq) return; // a newer request replaced this one
-        if (error) return showMessage('Could not load availability. ' + error.message);
+        if (error) {
+            showMessage('Could not load availability. ' + error.message);
+            return;
+        }
 
         const result = S.buildSlots({
             date, durationMins: service.duration_mins, shop, booked: data || [], now: new Date(),
@@ -137,9 +139,17 @@
 
     let profile;
     try { profile = await ALT.getMyProfile(session.user.id); }
-    catch (err) { return showMessage('Could not load your profile. ' + err.message); }
-    if (!profile) return showMessage('No profile found for this account.');
-    if (ALT.isStaff(profile.role)) { window.location.replace('home.html'); return; }
+    catch (err) {
+        showMessage('Could not load your profile. ' + err.message);
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
+    if (!profile) {
+        showMessage('No profile found for this account.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
+    if (ALT.isStaff(profile.role)) { window.location.replace('dashboard.html'); return; }
 
     const draft = readDraft();
     if (!draft) { window.location.replace('book-service.html'); return; }
@@ -153,7 +163,9 @@
             .eq('id', draft.vehicleId).eq('owner_id', session.user.id).maybeSingle(),
     ]);
     if (sRes.error || vRes.error || !sRes.data || !vRes.data) {
-        return showMessage('Your selection is no longer available. Please go back and choose again.');
+        showMessage('Your selection is no longer available. Please go back and choose again.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
     }
     service = sRes.data;
     vehicle = vRes.data;
@@ -170,6 +182,7 @@
     $('date').value = S.firstOpenDay(today, shop);
     $('date').addEventListener('change', loadSlots);
     await loadSlots();
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 
     // Live updates: refresh whenever anyone's booking changes the slot table.
     ALT.db.channel('booked-slots-live')
@@ -182,6 +195,7 @@
         const btn = $('confirm-btn');
         btn.disabled = true;
         clearMessage();
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.show('Saving your appointment…');
 
         // We send only WHAT and WHEN. The database sets the reference number,
         // end time and price itself.
@@ -200,6 +214,7 @@
                 ? 'Sorry, that time was just taken. Please choose another slot.'
                 : 'Could not complete the booking. ' + error.message);
             await loadSlots();
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
             return;
         }
         sessionStorage.removeItem('altBooking');

@@ -116,11 +116,17 @@
     try {
         profile = await ALT.getMyProfile(session.user.id);
     } catch (err) {
-        return showMessage('Could not load your profile. ' + err.message);
+        showMessage('Could not load your profile. ' + err.message);
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
     }
-    if (!profile) return showMessage('No profile found for this account.');
+    if (!profile) {
+        showMessage('No profile found for this account.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
     if (ALT.isStaff(profile.role)) {
-        window.location.replace('home.html'); // staff use the dashboard
+        window.location.replace('dashboard.html');
         return;
     }
     $('f-name').value = profile.full_name || '';
@@ -143,6 +149,7 @@
 
     if (sRes.error) showMessage('Could not load services. ' + sRes.error.message);
     renderServices(sRes.data || []);
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 
     // ---- events ---------------------------------------------------------
     $('vehicle-select').addEventListener('change', onVehicleChange);

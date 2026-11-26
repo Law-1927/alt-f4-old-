@@ -6,9 +6,21 @@
     const msg = $('msg');
     const embedded = new URLSearchParams(window.location.search).get('embed') === '1';
 
-    function goHome() {
+    function goToDashboard(role) {
         const destination = embedded ? window.top : window;
-        destination.location.replace('home.html');
+        const page = ALT.isStaff(role) ? 'dashboard.html' : 'history.html';
+        destination.location.replace(page);
+    }
+
+    async function routeSignedInUser(userId) {
+        const profile = await ALT.getMyProfile(userId);
+        if (!profile) {
+            await ALT.signOut('local');
+            showMessage('This account is no longer available. You can log in or register again.');
+            return false;
+        }
+        goToDashboard(profile.role);
+        return true;
     }
 
     function showMessage(text, kind) {
@@ -39,23 +51,22 @@
     setTab(new URLSearchParams(window.location.search).get('mode') === 'register' ? 'register' : 'login');
 
     // Already signed in? Skip the form.
-    ALT.db.auth.getSession().then(async ({ data, error }) => {
-        if (error) return showMessage('Could not verify your session. ' + error.message);
-        if (!data.session) return;
-
+    (async function checkExistingSession() {
         try {
-            const profile = await ALT.getMyProfile(data.session.user.id);
-            if (profile) {
-                goHome();
+            const { data, error } = await ALT.db.auth.getSession();
+            if (error) {
+                showMessage('Could not verify your session. ' + error.message);
                 return;
             }
+            if (!data.session) return;
 
-            await ALT.signOut('local');
-            showMessage('This account is no longer available. You can log in or register again.');
+            await routeSignedInUser(data.session.user.id);
         } catch (err) {
             showMessage('Could not verify your account. ' + err.message);
+        } finally {
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
         }
-    });
+    })();
 
     $('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -66,17 +77,23 @@
 
         const btn = $('login-btn');
         btn.disabled = true;
-        const { error } = await ALT.db.auth.signInWithPassword({ email, password });
-        btn.disabled = false;
-
-        if (error) {
-            // Unconfirmed accounts get their own hint; everything else stays generic.
-            const unconfirmed = /not confirmed/i.test(error.message);
-            return showMessage(unconfirmed
-                ? 'Please confirm your email first, then log in.'
-                : 'Incorrect email or password.');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.show('Signing in…');
+        try {
+            const { data, error } = await ALT.db.auth.signInWithPassword({ email, password });
+            if (error) {
+                const unconfirmed = /not confirmed/i.test(error.message);
+                showMessage(unconfirmed
+                    ? 'Please confirm your email first, then log in.'
+                    : 'Incorrect email or password.');
+                return;
+            }
+            await routeSignedInUser(data.user.id);
+        } catch (err) {
+            showMessage('Could not sign in. ' + err.message);
+        } finally {
+            btn.disabled = false;
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
         }
-        goHome();
     });
 
     $('register-form').addEventListener('submit', async (e) => {
@@ -93,24 +110,33 @@
 
         const btn = $('reg-btn');
         btn.disabled = true;
-        const { data, error } = await ALT.db.auth.signUp({
-            email,
-            password,
-            options: {
-                data: { full_name, phone },
-                emailRedirectTo: new URL('login.html', window.location.href).href,
-            },
-        });
-        btn.disabled = false;
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.show('Creating your account…');
+        try {
+            const { data, error } = await ALT.db.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: { full_name, phone },
+                    emailRedirectTo: new URL('login.html', window.location.href).href,
+                },
+            });
+            if (error) {
+                showMessage(error.message);
+                return;
+            }
 
-        if (error) return showMessage(error.message);
-
-        if (!data.session) {
-            // Email confirmation is switched on in Supabase.
-            setTab('login');
-            $('login-email').value = email;
-            return showMessage('Account created. Check your email to confirm it, then log in.', 'ok');
+            if (!data.session) {
+                setTab('login');
+                $('login-email').value = email;
+                showMessage('Account created. Check your email to confirm it, then log in.', 'ok');
+                return;
+            }
+            await routeSignedInUser(data.user.id);
+        } catch (err) {
+            showMessage('Could not create your account. ' + err.message);
+        } finally {
+            btn.disabled = false;
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
         }
-        goHome();
     });
 })();

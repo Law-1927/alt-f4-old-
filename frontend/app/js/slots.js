@@ -19,6 +19,10 @@
         return t.getUTCFullYear() + '-' + pad(t.getUTCMonth() + 1) + '-' + pad(t.getUTCDate());
     }
 
+    function isWithinBookingWindow(dateStr, today, days) {
+        return dateStr >= today && dateStr <= addDays(today, days);
+    }
+
     // Today's calendar date in the Philippines, as 'YYYY-MM-DD'.
     function todayInManila(now) {
         return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now || new Date());
@@ -75,7 +79,7 @@
         return { closed: false, slots };
     }
 
-    const api = { weekdayOf, addDays, todayInManila, toInstant, dayBounds, fmtTime, fmtDateLong, firstOpenDay, buildSlots };
+    const api = { weekdayOf, addDays, isWithinBookingWindow, todayInManila, toInstant, dayBounds, fmtTime, fmtDateLong, firstOpenDay, buildSlots };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     else root.ALT_SLOTS = api;
 })(typeof window !== 'undefined' ? window : globalThis);

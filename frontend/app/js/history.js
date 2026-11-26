@@ -43,20 +43,24 @@
 
     async function handleCancel(booking) {
         clearMessage();
-        const ok = window.confirm('Cancel appointment ' + booking.ref_id + '? This cannot be undone.');
+        const ok = window.confirm('Cancel appointment ' + booking.ref_id + '? It can only be cancelled before its start time, and this action cannot be undone.');
         if (!ok) return;
 
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.show('Cancelling your appointment…');
         try {
             const { error } = await ALT.db.rpc('cancel_appointment', { p_id: booking.id });
             if (error) {
                 showMessage('Could not cancel booking: ' + error.message, 'error');
                 return;
             }
-            showMessage('Appointment ' + booking.ref_id + ' has been cancelled.', 'ok');
-            await loadAll();
         } catch (err) {
             showMessage('Error cancelling booking: ' + err.message, 'error');
+            return;
+        } finally {
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
         }
+        showMessage('Appointment ' + booking.ref_id + ' has been cancelled.', 'ok');
+        await loadAll();
     }
 
     function createBookingCard(b, isUpcoming) {
@@ -138,7 +142,7 @@
         list.forEach((b) => {
             const start = new Date(b.starts_at);
             const end = new Date(b.ends_at);
-            const pendingUpcoming = b.status === 'Pending' && start >= now;
+            const pendingUpcoming = b.status === 'Pending' && start > now;
             const ongoing = b.status === 'Ongoing' && end >= now;
             if (pendingUpcoming || ongoing) {
                 upcoming.push(b);
@@ -209,14 +213,21 @@
         const seq = ++loadSeq;
 
         // Fetch client bookings and notices in parallel
-        const [bookingsRes, noticesRes] = await Promise.all([
-            ALT.db.from('appointments')
-                .select('id, ref_id, status, starts_at, ends_at, total_due_php, service:services(name), vehicle:vehicles(make, model, plate_number)')
-                .order('starts_at', { ascending: false }),
-            ALT.db.from('notifications')
-                .select('id, appointment_id, message, channel, created_at')
-                .order('created_at', { ascending: false }),
-        ]);
+        let bookingsRes;
+        let noticesRes;
+        try {
+            [bookingsRes, noticesRes] = await Promise.all([
+                ALT.db.from('appointments')
+                    .select('id, ref_id, status, starts_at, ends_at, total_due_php, service:services(name), vehicle:vehicles(make, model, plate_number)')
+                    .order('starts_at', { ascending: false }),
+                ALT.db.from('notifications')
+                    .select('id, appointment_id, message, channel, created_at')
+                    .order('created_at', { ascending: false }),
+            ]);
+        } catch (err) {
+            if (seq === loadSeq) showMessage('Could not load booking history. ' + err.message, 'error');
+            return;
+        }
 
         if (seq !== loadSeq) return;
 
@@ -239,7 +250,24 @@
 
     $('signout').addEventListener('click', () => ALT.signOut());
 
+    try {
+        const profile = await ALT.getMyProfile(session.user.id);
+        if (!profile) {
+            await ALT.signOut('local');
+            return;
+        }
+        if (ALT.isStaff(profile.role)) {
+            window.location.replace('dashboard.html');
+            return;
+        }
+    } catch (err) {
+        showMessage('Could not verify your account. ' + err.message, 'error');
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        return;
+    }
+
     await loadAll();
+    if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
 
     // Live updates for real-time notifications and appointment status
     let timer = null;

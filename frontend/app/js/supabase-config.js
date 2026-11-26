@@ -6,6 +6,6 @@
 // NEVER put the secret key (sb_secret_...) or the legacy service_role key in
 // this file or anywhere in the frontend.
 window.ALT_CONFIG = {
-    SUPABASE_URL: 'https://caqbvdvgcwxqfwvywcry.supabase.co',
-    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_lKbvy8ZlMGgyyJY4fJGRuw_DszRVWly',
+    SUPABASE_URL: 'https://supabase.com/dashboard/project/wnpnzhdlulwcvvnfjufi',
+    SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_DwBpnWpmiPkAEdTbEM06ZQ_S0BdDQw_',
 };

@@ -42,5 +42,13 @@
         window.location.replace('index.html');
     }
 
-    window.ALT = { db: client, requireSession, getMyProfile, isStaff, signOut };
+    async function deleteAccount() {
+        const { error } = await client.rpc('delete_my_account');
+        if (error) throw error;
+
+        await client.auth.signOut({ scope: 'local' });
+        window.location.replace('index.html');
+    }
+
+    window.ALT = { db: client, requireSession, getMyProfile, isStaff, signOut, deleteAccount };
 })();

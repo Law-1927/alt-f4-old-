@@ -63,6 +63,28 @@
         await loadAll();
     }
 
+    async function handleDeleteAccount() {
+        clearMessage();
+        const confirmation = window.prompt(
+            'This permanently deletes your account, vehicles, appointments, and notifications.\n\nType DELETE to continue.'
+        );
+        if (confirmation !== 'DELETE') return;
+
+        const ok = window.confirm(
+            'Delete this account permanently? This action cannot be undone.'
+        );
+        if (!ok) return;
+
+        if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.show('Deleting your account…');
+        try {
+            await ALT.deleteAccount();
+        } catch (err) {
+            showMessage('Could not delete your account: ' + err.message, 'error');
+        } finally {
+            if (window.ALT_PAGE_LOADING) window.ALT_PAGE_LOADING.hide();
+        }
+    }
+
     function createBookingCard(b, isUpcoming) {
         const card = document.createElement('div');
         const isCancelled = b.status === 'Cancelled';
@@ -249,6 +271,7 @@
     if (!session) return;
 
     $('signout').addEventListener('click', () => ALT.signOut());
+    $('delete-account').addEventListener('click', handleDeleteAccount);
 
     try {
         const profile = await ALT.getMyProfile(session.user.id);

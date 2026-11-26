@@ -99,14 +99,19 @@ This is the simplest route and what the team should use.
 3. Click **Run**. It should finish with no errors.
 4. In a separate query, run the full contents of
    `supabase/migrations/20261030000000_security_hardening.sql`.
+5. Run the full contents of
+   `supabase/migrations/20261127000000_authenticated_api_grants.sql`.
 
 It creates the tables, the double-booking rule, row-level security, the
 notification triggers, the `reports_daily` view, and the real-time
-publication. The follow-up hardening migration adds checks for future profile writes,
-appointment update guards, staff access auditing, and restricted helper
-function grants. Apply migrations in timestamp order. The initial migration is
-not idempotent; the security-hardening migration is safe to re-run if a Supabase
-Preview check retries against a database where it has already been applied.
+publication. The follow-up hardening migration adds checks for future profile
+writes, appointment update guards, staff access auditing, and restricted helper
+function grants. The API-grants migration gives the `authenticated` role the
+SQL privileges needed to reach the existing row-level security policies. Apply
+migrations in timestamp order. The initial migration is not idempotent; the
+security-hardening migration is safe to re-run if a Supabase Preview check
+retries against a database where it has already been applied. The grants
+migration is also safe to re-run.
 To start over, create a fresh Supabase project (simplest) or drop the tables first.
 
 ### 4.3 Create your first admin
